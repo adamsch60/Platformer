@@ -40,6 +40,21 @@ return ss.str();
 }
 
 
+
+
+class Object{
+public:
+void step();
+Object* father;
+void Collision();
+};
+
+
+
+
+
+
+
 class LTexture
 {
 public:
@@ -303,10 +318,10 @@ vector<LTexture > textures;
 vector<bool> isAnim;
 vector<vector<SDL_Rect> > frames;
 
-template <typename T>
-class Actor{
+
+class Actor: public Object{
     public:
-T* father;
+Object* father;
 LTexture* texture;
 double tick=0;
 bool Anim;
@@ -325,7 +340,7 @@ this->width=width;
 this->height=height;
 }
 
-Actor(T* father=NULL,int TextureId=0){
+Actor(Object* father=NULL,int TextureId=0){
     this->father=father;
     texture=&(textures[TextureId]);
     Anim=isAnim[TextureId];
@@ -394,6 +409,7 @@ bool loadMedia()//!/////////////////////////////////////////////////////////////
 
 
 
+
 class Point{
 double x,y;
 };
@@ -412,14 +428,14 @@ vector<Line> Lines;
 
 
 /*friction collision gravity*/
-template <typename T>
-class Entity{
+
+class Entity: public Object{
 public:
-T* father;
+Object* father;
 double x,y,xs,ys,xa=0,ya=0,deg=0,friction=1,gravity=0;
 Poligon Hitbox;
-Actor<Entity> Entity_actor;
-Entity(T* father=NULL,int texture=0,double x=0, double y=0, double deg=0,double xs=0, double ys=0,double xa=0, double ya=0 ){
+Actor Entity_actor;
+Entity(Object* father=NULL,int texture=0,double x=0, double y=0, double deg=0,double xs=0, double ys=0,double xa=0, double ya=0 ){
 this->father=father;
 this->x=x;
 this->y=y;
@@ -427,7 +443,7 @@ this->xs=xs;
 this->ys=ys;
 this->xa=xa;
 this->ya=ya;
-Actor<Entity> Entity_actor(this,texture) ;
+Actor Entity_actor(this,texture) ;
 this->Entity_actor=Entity_actor;
 };
 void step(){
@@ -545,11 +561,11 @@ while( SDL_PollEvent( &event ))
 
 
 
-class Player{
+class Player: public Object{
 public:
-Entity<Player> Player_entity;
+Entity Player_entity;
 Player(){
- Entity<Player> Player_entity(this,0,0,0);
+ Entity Player_entity(this,0,0,0);
 Player_entity.friction=3;
 Player_entity.gravity=1000;
 this->Player_entity=Player_entity;

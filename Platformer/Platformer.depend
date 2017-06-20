@@ -351,3 +351,25 @@
 	"begin_code.h"
 	"close_code.h"
 
+1497963637 source:c:\users\Ádám\desktop\platformer\platformer\main.cpp
+	<iostream>
+	<vector>
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+	<math.h>
+	<windows.h>
+	<SDL.h>
+	<SDL_image.h>
+	<SDL_ttf.h>
+	<stdio.h>
+	<string>
+	<cmath>
+	<limits.h>
+	<algorithm>
+	<string.h>
+	<sstream>
+	<queue>
+	<fstream>
+	<bits/stdc++.h>
+
