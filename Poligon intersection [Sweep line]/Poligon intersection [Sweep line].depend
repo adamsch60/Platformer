@@ -1,0 +1,5 @@
+# depslib dependency file v1.0
+1501610255 source:f:\documents\c++\poligon intersection [sweep line]\main.cpp
+	<iostream>
+	<bits/stdc++.h>
+

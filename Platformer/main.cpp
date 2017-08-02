@@ -47,6 +47,7 @@ public:
 void step();
 Object* father;
 void Collision();
+bool waiting_for_delete=false;
 };
 
 
@@ -322,7 +323,7 @@ vector<vector<SDL_Rect> > frames;
 class Actor: public Object{
     public:
 Object* father;
-LTexture* texture;
+LTexture* texture=NULL;
 double tick=0;
 bool Anim;
 vector<SDL_Rect> frame;
@@ -340,8 +341,9 @@ this->width=width;
 this->height=height;
 }
 
-Actor(Object* father=NULL,int TextureId=0){
+Actor(Object* father=NULL,int TextureId=-1){
     this->father=father;
+    if(TextureId==-1)return;
     texture=&(textures[TextureId]);
     Anim=isAnim[TextureId];
     if(Anim){
@@ -352,7 +354,7 @@ Actor(Object* father=NULL,int TextureId=0){
 }
 
 void renderActor(double x, double y, double deg){
-
+    if(texture==NULL)return;
     if(Anim){
          //   cout<<tick<<" "<<Time<<" "<<frame.size()<<" "<<(int)floor(tick/Time*frame.size())<<endl;
         texture->render(x,y,deg,width,height,&frame[(int)floor(tick/Time*frame.size())],&center);
@@ -408,34 +410,72 @@ bool loadMedia()//!/////////////////////////////////////////////////////////////
 
 
 
+void close()
+{
+    textures.clear();
+    TTF_CloseFont( gFont );
+    gFont = NULL;
 
+    SDL_DestroyRenderer( gRenderer );
+    SDL_DestroyWindow( gWindow );
+    gWindow = NULL;
+    gRenderer = NULL;
+
+    TTF_Quit();
+    IMG_Quit();
+    SDL_Quit();
+
+}
+class Poligon;
 
 class Point{
+    public:
+    Poligon* father;
 double x,y;
+double start_x,start_y;
+Point(double x,double y,Poligon* father){
+start_x=x;
+start_y=y;
+this-> father=father;
+}
+
+void step(double Ent_x,double Ent_y,double Ent_deg){//cout<<"yap";
+x=Ent_x+start_x*sin(Ent_deg/180*acos(-1))+start_y*cos(Ent_deg/180*acos(-1));
+y=Ent_y+start_y*sin(Ent_deg/180*acos(-1))-start_x*cos(Ent_deg/180*acos(-1));
+SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, 255);
+SDL_RenderDrawLine(gRenderer, x + SCREEN_WIDTH/2,y + SCREEN_HEIGHT/2,0,0);
+//cout<<x<<" "<<y<<endl;
+};
 };
 
 class Line{
-Point a,b;
+    public:
+    Poligon* father;
+Point* a,b;
+
 };
 
 
 
 class Poligon{
+public:
+Object* father;
 vector<Point> Points;
 vector<Line> Lines;
+bool waiting_for_delete=false;
 };
 
-
+const Poligon Null_Poligon=Poligon();
 
 /*friction collision gravity*/
 
 class Entity: public Object{
 public:
 Object* father;
-double x,y,xs,ys,xa=0,ya=0,deg=0,friction=1,gravity=0;
-Poligon Hitbox;
+double x,y,xs,ys,xa=0,ya=0,deg=0,friction=1,gravity=0;bool collision=true;
+Poligon* Hitbox;
 Actor Entity_actor;
-Entity(Object* father=NULL,int texture=0,double x=0, double y=0, double deg=0,double xs=0, double ys=0,double xa=0, double ya=0 ){
+Entity(Object* father=NULL,int texture=-1,double x=0, double y=0, double deg=0, Poligon Hitbox=Null_Poligon ,double xs=0, double ys=0,double xa=0, double ya=0){
 this->father=father;
 this->x=x;
 this->y=y;
@@ -443,6 +483,7 @@ this->xs=xs;
 this->ys=ys;
 this->xa=xa;
 this->ya=ya;
+this->Hitbox=new Poligon(Hitbox);
 Actor Entity_actor(this,texture) ;
 this->Entity_actor=Entity_actor;
 };
@@ -459,6 +500,8 @@ if(friction!=1){
 }
 xa=0;
 ya=0;
+//for(int i=0;i<Hitbox.Points.size();i++)Hitbox.Points[i].step(x,y,deg);
+for(auto act : Hitbox.Points)act.step(x,y,deg);
 Entity_actor.renderActor(x,y,deg);
 }
 
@@ -466,28 +509,14 @@ void impulse(double deg,double force){
 xa+=tick_count*force*sin(deg/180*acos(-1));
 ya+=tick_count*-force*sin((90-deg)/180*acos(-1));
 }
-
+~Entity(){
+Hitbox.waiting_for_delete=true;
+}
 
 };
 
 
-void close()
-{
-    TTF_CloseFont( gFont );
-    gFont = NULL;
-
-    SDL_DestroyRenderer( gRenderer );
-    SDL_DestroyWindow( gWindow );
-    gWindow = NULL;
-    gRenderer = NULL;
-
-    TTF_Quit();
-    IMG_Quit();
-    SDL_Quit();
-
-}
-
-
+vector<Point*> Hitboxes;
 
 
 
@@ -565,10 +594,18 @@ class Player: public Object{
 public:
 Entity Player_entity;
 Player(){
- Entity Player_entity(this,0,0,0);
-Player_entity.friction=3;
+Poligon Player_Hitbox;
+Player_Hitbox.Points.push_back(Point(100,100,&Player_Hitbox));
+Player_Hitbox.Points.push_back(Point(100,50,&Player_Hitbox));
+Player_Hitbox.Points.push_back(Point(50,50,&Player_Hitbox));
+Player_Hitbox.Points.push_back(Point(50,0,&Player_Hitbox));
+Player_Hitbox.Points.push_back(Point(0,0,&Player_Hitbox));
+Entity Player_entity(this,0,0,0,0,Player_Hitbox);
+Player_entity.friction=10;
 Player_entity.gravity=1000;
 this->Player_entity=Player_entity;
+
+
 }
 void step(){
 /**/
@@ -620,14 +657,15 @@ int t0=0;
                     SDL_RenderClear( gRenderer );
                     Control();
                     player.step();
-                    if(t0==0){player.Player_entity.impulse(47,1000);cout<<"BUMM";}
+                    player.Player_entity.deg=t0*2;
+                   if(t0==0){player.Player_entity.impulse(47,1000);cout<<"BUMM";}
                     SDL_RenderPresent( gRenderer );
 
                     timer=clock()-timer;
 
                     if((1.0/tick_count-timer/CLOCKS_PER_SEC)>0){
                         SDL_Delay((1.0/tick_count-timer/CLOCKS_PER_SEC)*1000);/*!...!*/
-                    }
+                    }else cout<<1.0/(timer/CLOCKS_PER_SEC);
                 t0++;
                 };
                 close();
