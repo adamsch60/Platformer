@@ -501,7 +501,7 @@ if(friction!=1){
 xa=0;
 ya=0;
 //for(int i=0;i<Hitbox.Points.size();i++)Hitbox.Points[i].step(x,y,deg);
-for(auto act : Hitbox.Points)act.step(x,y,deg);
+for(auto act : Hitbox->Points)act.step(x,y,deg);
 Entity_actor.renderActor(x,y,deg);
 }
 
@@ -510,7 +510,7 @@ xa+=tick_count*force*sin(deg/180*acos(-1));
 ya+=tick_count*-force*sin((90-deg)/180*acos(-1));
 }
 ~Entity(){
-Hitbox.waiting_for_delete=true;
+Hitbox->waiting_for_delete=true;
 }
 
 };
