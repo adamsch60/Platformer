@@ -69,34 +69,25 @@ bool waiting_for_delete=false;
 class Event{
     public:
 
-    double x; virtual ~Event() {}
-    template<typename T>
-    bool isA() {
-        return (dynamic_cast<T*>(this) != NULL);
-    }
-};
-class Endpoint :public  Event{
-    public:
+    bool v;
+    double x;
     Line l;
-    bool b;
-};
-class Intersection :public  Event{
-    public:
+    bool e;
     Line a;
     Line b;
 };
 
 function<bool (Line,Line)>  Compare_LineHeight(double loc_x){
 
-return [=](Line a,Line b){
+return [loc_x](Line a,Line b){cout<<a.Name<<","<<b.Name<<endl;
   return  (loc_x-a.a->x)/(a.b->x-a.a->x)*a.a->y+(1-(loc_x-a.a->x)/(a.b->x-a.a->x))*a.b->y<(loc_x-b.a->x)/(b.b->x-b.a->x)*b.a->y+(1-(loc_x-b.a->x)/(b.b->x-b.a->x))*b.b->y
  ;
 };
 
 }
 
-bool Compare_Endpoints(Event* a,Event* b){
-return a->x<b->x;
+bool Compare_Events(Event a,Event b){
+return a.x<b.x;
 }
 
 
@@ -113,79 +104,90 @@ if(sqrt((a.a->x-a.b->x)*(a.a->x-a.b->x)+(a.a->y-a.b->y)*(a.a->y-a.b->y))+sqrt((b
 
 void Collision_Detection(vector<Poligon> Poligons)
 {
-    vector<Event *> events;
+    vector<Event > events;
     for(int a=Poligons.size(); a>0; a--)
         for(int b=0; b<Poligons[a-1].Lines.size(); b++){
-            Endpoint newa;
+            Event newa;
             newa.x=Poligons[a-1].Lines[b].a->x;
-            newa.b=true;
+            newa.e=true;
             newa.l=Poligons[a-1].Lines[b];
-            events.push_back(&newa);
-            Endpoint newb;
+            newa.v=true;
+            events.push_back(newa);
+            Event newb;
             newb.x=Poligons[a-1].Lines[b].b->x;
-            newb.b=false;
+            newb.e=false;
+            newb.v=true;
             newb.l=Poligons[a-1].Lines[b];
-            events.push_back(&newb);
-             }
-    sort(events.begin(),events.end(),Compare_Endpoints);
+            events.push_back(newb);
+        }
+    sort(events.begin(),events.end(),Compare_Events);
     vector<Line> ranges;
     double loc_x=0;
     while(!events.empty())
     {
-        loc_x=events[0]->x;
 
-        if(dynamic_cast<Endpoint*>(events[0])!=NULL )
-        {   Endpoint* now;
-            now=dynamic_cast<Endpoint*>(events[0]);
+
+
+
+
+        loc_x=events[0].x;
+
+        if(events[0].v )
+        {     //    cout<<"dolgok"<<endl;
+              Event* now;
+            now=&events[0];
             int left=0;
             int right=ranges.size()-1;
+            if(left>right){ranges.insert(ranges.begin(),now->l);}else
             while (left <= right)
-            {
+            {cout<<"a"<<endl;
                 int middle = (left + right) / 2;
                 if ((loc_x-ranges[middle].a->x)/(ranges[middle].b->x-ranges[middle].a->x)*ranges[middle].a->y+(1-(loc_x-ranges[middle].a->x)/(ranges[middle].b->x-ranges[middle].a->x))*ranges[middle].b->y
-                     >= (now->b?now->l.a:now->l.b)->y
+                     >= (now->e?now->l.a:now->l.b)->y
                      && (loc_x-ranges[middle-1].a->x)/(ranges[middle-1].b->x-ranges[middle-1].a->x)*ranges[middle-1].a->y+(1-(loc_x-ranges[middle-1].a->x)/(ranges[middle-1].b->x-ranges[middle-1].a->x))*ranges[middle-1].b->y<
-                    (now->b?now->l.a:now->l.b)->y)
-                    if((loc_x-ranges[middle].a->x)/(ranges[middle].b->x-loc_x)*ranges[middle].a->y+(1-(loc_x-ranges[middle].a->x)/(ranges[middle].b->x-loc_x))*ranges[middle].b->y==(now->b?now->l.a:now->l.b)->y){
+                    (now->e?now->l.a:now->l.b)->y)
+                    if((loc_x-ranges[middle].a->x)/(ranges[middle].b->x-loc_x)*ranges[middle].a->y+(1-(loc_x-ranges[middle].a->x)/(ranges[middle].b->x-loc_x))*ranges[middle].b->y==(now->e?now->l.a:now->l.b)->y){
                             ranges.erase(ranges.begin()+middle);
                             if(Line_intersection(ranges[middle],ranges[middle-1])==-1){
-                                Intersection news;
+                                Event news;
                                 news.x=Line_intersection(ranges[middle],ranges[middle-1]);
                                 news.a=ranges[middle-1];
                                 news.b=ranges[middle];
-                                events.insert(lower_bound(events.begin(),events.end(),&news,Compare_Endpoints),&news);
+                                news.v=false;
+                                events.insert(lower_bound(events.begin(),events.end(),news,Compare_Events),news);
                             }
                         }else{
                             ranges.insert(ranges.begin()+middle,now->l);
                             if(Line_intersection(ranges[middle],ranges[middle-1])==-1){
-                                Intersection news;
+                                Event news;
                                 news.x=Line_intersection(ranges[middle],ranges[middle-1]);
                                 news.a=ranges[middle-1];
                                 news.b=ranges[middle];
-                                events.insert(lower_bound(events.begin(),events.end(),&news,Compare_Endpoints),&news);
+                                news.v=false;
+                                events.insert(lower_bound(events.begin(),events.end(),news,Compare_Events),news);
                             }
                             if(Line_intersection(ranges[middle],ranges[middle+1])==-1){
-                                Intersection news;
+                                Event news;
                                 news.x=Line_intersection(ranges[middle],ranges[middle+1]);
                                 news.a=ranges[middle];
                                 news.b=ranges[middle+1];
-                                events.insert(lower_bound(events.begin(),events.end(),&news,Compare_Endpoints),&news);
+                                news.v=false;
+                                events.insert(lower_bound(events.begin(),events.end(),news,Compare_Events),news);
                             }
                         }
-                else if ((loc_x-ranges[middle].a->x)/(ranges[middle].b->x-loc_x)*ranges[middle].a->y+(1-(loc_x-ranges[middle].a->x)/(ranges[middle].b->x-loc_x))*ranges[middle].b->y > (now->b?now->l.a:now->l.b)->y)
+                else if ((loc_x-ranges[middle].a->x)/(ranges[middle].b->x-loc_x)*ranges[middle].a->y+(1-(loc_x-ranges[middle].a->x)/(ranges[middle].b->x-loc_x))*ranges[middle].b->y > (now->e?now->l.a:now->l.b)->y)
                     right = middle - 1;
                 else
                     left = middle + 1;
             }
         }
         else
-        {   Intersection* now;
-            now=dynamic_cast<Intersection*>(events[0]);
+        {   Event* now=&events[0];
             Line swapee;
 
 
             /*FUCK LOWER BOUND (WELL IF WITH LINES)*/
-            cout<<(*lower_bound(ranges.begin(),ranges.end(),now->a,Compare_LineHeight(loc_x))).Name<<endl;
+            cout<<distance(ranges.begin(),lower_bound(ranges.begin(),ranges.end(),now->a,Compare_LineHeight(loc_x)))<<endl;
             swapee=(*lower_bound(ranges.begin(),ranges.end(),now->a,Compare_LineHeight(loc_x)));
             Line swapee2;
             swapee2=(*lower_bound(ranges.begin(),ranges.end(),now->b,Compare_LineHeight(loc_x)));
@@ -193,21 +195,24 @@ void Collision_Detection(vector<Poligon> Poligons)
             *lower_bound(ranges.begin(),ranges.end(),now->b,Compare_LineHeight(loc_x))=swapee;
 
             if(lower_bound(ranges.begin(),ranges.end(),now->a,Compare_LineHeight(loc_x))!=ranges.begin() && Line_intersection(*lower_bound(ranges.begin(),ranges.end(),now->a,Compare_LineHeight(loc_x)),*(--lower_bound(ranges.begin(),ranges.end(),now->a,Compare_LineHeight(loc_x))))==-1){
-                Intersection news;
+                Event news;
                 news.x=Line_intersection(*lower_bound(ranges.begin(),ranges.end(),now->a,Compare_LineHeight(loc_x)),*(--lower_bound(ranges.begin(),ranges.end(),now->a,Compare_LineHeight(loc_x))));
                 news.a=*lower_bound(ranges.begin(),ranges.end(),now->a,Compare_LineHeight(loc_x));
                 news.b=*(--lower_bound(ranges.begin(),ranges.end(),now->a,Compare_LineHeight(loc_x)));
-                events.insert(lower_bound(events.begin(),events.end(),&news,Compare_Endpoints),&news);
+                news.v=false;
+                events.insert(lower_bound(events.begin(),events.end(),news,Compare_Events),news);
             }
             if(lower_bound(ranges.begin(),ranges.end(),now->b,Compare_LineHeight(loc_x))!=ranges.end() && Line_intersection(*lower_bound(ranges.begin(),ranges.end(),now->b,Compare_LineHeight(loc_x)),*(++lower_bound(ranges.begin(),ranges.end(),now->b,Compare_LineHeight(loc_x))))==-1){
-                Intersection news;
+                Event news;
                 news.x=Line_intersection(*lower_bound(ranges.begin(),ranges.end(),now->b,Compare_LineHeight(loc_x)),*(++lower_bound(ranges.begin(),ranges.end(),now->b,Compare_LineHeight(loc_x))));
                 news.a=*lower_bound(ranges.begin(),ranges.end(),now->b,Compare_LineHeight(loc_x));
                 news.b=*(++lower_bound(ranges.begin(),ranges.end(),now->b,Compare_LineHeight(loc_x)));
-                events.insert(lower_bound(events.begin(),events.end(),&news,Compare_Endpoints),&news);
+                news.v=false;
+                events.insert(lower_bound(events.begin(),events.end(),news,Compare_Events),news);
             }
 
         }
+        events.erase(events.begin());
         for(int x=0;x<ranges.size();x++){cout<<ranges[x].Name<<",";}cout<<endl;
     }
 
